@@ -1,0 +1,86 @@
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.banner {
+  display: flex;
+  justify-content: center;
+  margin-top: 40px;
+  margin-bottom: 40px;
+}
+
+.box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.box__header {
+  margin-bottom: 16px;
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.field__input {
+  margin-left: 8px;
+}
+
+.field__name {
+  min-width: 120px;
+}
+
+.field__amount {
+  width: 80px;
+}
+
+.field__error {
+  color: red;
+  margin-top: 4px;
+}
+
+.expenses {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.expense__header {
+  margin-bottom: 16px;
+}
+
+.expense {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.expense__name {
+  min-width: 120px;
+}
+
+.expense__amount {
+  width: 80px;
+}
+
+.expense__error {
+  color: red;
+  margin-top: 4px;
+}
+
+.button {
+  margin-top: 24px;
+}
