@@ -1,49 +1,51 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { useRouter } from "next/router";
-import { supabaseClient } from "../../utils";
-import styles from "./incomes.module.css";
+import { NextPage } from "next";
+import { CustomProps } from "./interfaces";
+import { supabase } from "../../utils";
+import { useUserData } from "./UserDataProvider";
 
 type Income = {
-  // id: string;
+  id?: string;
   name: string;
   amount: number;
 };
 
-export default function Incomes() {
+const Incomes: NextPage<CustomProps> = ({ session }) => {
   const router = useRouter();
-  const [incomes, setIncomes] = useState<Income[]>([]);
+  const [incomes, setIncomes] = useState<Income[]>([{ name: "", amount: 0 }]);
+
+  const { userData, setUserData } = useUserData();
+
+  const [input, setInput] = useState<Income>({
+    name: "",
+    amount: 0,
+  });
 
   const fetchIncomes = async () => {
-    const { data, error } = await supabaseClient.from("income").select("*");
-
+    const { data, error } = await supabase.from("income").select("*");
     if (error) console.log("Error fetching incomes:", error);
     else if (data.length > 0) setIncomes(data as Income[]);
-    else
-      setIncomes([
-        { name: "Salario", amount: 0 },
-        { name: "Ingreso Adicional 1", amount: 0 },
-        { name: "Ingreso Adicional 2", amount: 0 },
-      ]);
+    else setIncomes([{ name: "Salario", amount: 0 }]);
   };
 
-  const upsertIncomes = async () => {
+  const handleContinue = async () => {
+    const incomesData = incomes.map(({ name, amount, id }) => ({
+      name,
+      amount,
+      ...(id && { id }),
+      user_id: session.user.id,
+    }));
 
-    const id = (await supabaseClient.auth.getUser()).data.user?.id
+    const { data, error } = await supabase.from("income").upsert(incomesData, {
+      onConflict: "id",
+    });
 
-    if (id === undefined) { 
-        router.replace('dashboard')
-        return
-     }
+    setUserData({ ...userData, totalIncome: totalIncome });
 
-    const incomesData = incomes.map((income) => ({ ...income, user_id: id}))
-
-    const { error } = await supabaseClient.from("income").upsert(incomesData);
     if (error) console.log("Error upserting incomes:", error);
     else {
-        router.push({
-            pathname: 'expenses',
-            query: { income: totalIncome },
-        }, 'expenses')
+      router.push("expenses");
     }
   };
 
@@ -53,15 +55,44 @@ export default function Incomes() {
 
   type PropertyName = "name" | "amount";
 
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setInput((prevState) => ({
+      ...prevState,
+      [name]: value,
+    }));
+  };
+
+  const handleAddIncome = async () => {
+    const { name, amount } = input;
+    if (name && amount) {
+      const { data, error } = await supabase
+        .from("income")
+        .insert({ ...input, user_id: session.user.id })
+        .select();
+
+      if (data === null) {
+        return;
+      }
+
+      setIncomes((prevState) => [
+        ...prevState,
+        {
+          id: data[0].id,
+          name: name,
+          amount: amount,
+        },
+      ]);
+      setInput({ name: "", amount: 0 });
+    }
+  };
 
   const handleChange = (index: number, property: PropertyName, value: any) => {
     const newIncomes = [...incomes];
     newIncomes[index][property] = value;
     setIncomes(newIncomes);
-  };
-
-  const handleUpsertClick = () => {
-    upsertIncomes();
   };
 
   // Calculate total income
@@ -71,47 +102,148 @@ export default function Incomes() {
   );
 
   return (
-    <div className={styles.container}>
-      <h1 className={styles.title}>Define tu flujo de caja</h1>
-      <table className={styles.incomesTable}>
-        <thead>
-          <tr>
-            <th>Ingresos mensuales</th>
-            <th>Monto</th>
-          </tr>
-        </thead>
-        <tbody>
-          {incomes.map((income, index) => (
-            <tr key={index}>
-              <td>
-                <input
-                type="text"
-                value={income.name}
-                onChange={(event) => handleChange(index, "name", event.target.value)}/>
-              </td>
-              <td>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={income.amount}
-                  onChange={(event) => handleChange(index, "amount", parseFloat(event.target.value))}
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background text-primary">
+      <div className="sm:hidden bg-primary w-full">
+        <h2 className="text-center font-bold text-4xl m-8 text-white">
+          Define tus ingresos
+        </h2>
+      </div>
+      <div className="max-w-screen-lg w-full mx-4 bg-white rounded-lg shadow-lg p-8 overflow-y-scroll">
+        <h2 className="text-left text-3xl font-bold sm:text-4xl hidden sm:block">
+          Define tus ingresos
+        </h2>
+
+        <p className="mt-4 text-primary">
+          Lorem ipsum dolor, sit amet consectetur adipisicing elit. Aut qui hic
+          atque tenetur quis eius quos ea neque sunt, accusantium soluta minus
+          veniam tempora deserunt? Molestiae eius quidem quam repellat.
+        </p>
+
+        <div className="flex flex-col items-start justify-center">
+          {" "}
+          {/* overflow-x-auto */}
+          <table className="my-4 divide-y-2 divide-gray-200 text-l items-start w-full">
+            <thead className="text-left">
+              <tr>
+                <th className="whitespace-nowrap px-2 py-2 font-medium text-primary">
+                  Ingresos Mensuales
+                </th>
+                <th className="whitespace-nowrap px-2 py-2 font-medium text-primary">
+                  Monto
+                </th>
+                <th className="px-4 py-2"></th>
+              </tr>
+            </thead>
+
+            <tbody className="divide-y divide-gray-200">
+              {incomes.map((income, index) => (
+                <tr key={index}>
+                  <td className="whitespace-nowrap px-4 py-2 font-medium text-primary">
+                    <input
+                      type="text"
+                      id={`Name_${index}`}
+                      value={income.name}
+                      onChange={(event) =>
+                        handleChange(index, "name", event.target.value)
+                      }
+                      className="w-full rounded border-gray-200 [-moz-appearance:_textfield] sm:text-sm [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-2 font-medium text-primary">
+                    <input
+                      type="number"
+                      id={`Monto_${index}`}
+                      value={income.amount}
+                      onChange={(event) =>
+                        handleChange(
+                          index,
+                          "amount",
+                          parseFloat(event.target.value)
+                        )
+                      }
+                      className="w-full rounded border-gray-200 [-moz-appearance:_textfield] sm:text-sm [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                  </td>
+                  {/* <td className="whitespace-nowrap px-4 py-2">
+                    <button
+                      className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded"
+                      onClick={() => handleRemoveIncome(index)}
+                    >
+                      Eliminar
+                    </button>
+                  </td> */}
+                </tr>
+              ))}
+              <tr>
+                <td className="whitespace-nowrap px-4 py-2 font-medium text-primary">
+                  <input
+                    type="text"
+                    name="name"
+                    value={input.name}
+                    onChange={handleInputChange}
+                    placeholder="Ingreso"
+                    className="w-full rounded border-gray-200 [-moz-appearance:_textfield] sm:text-sm [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none"
                   />
-                $
-              </td>
-            </tr>
-          ))}
-          <tr>
-            <td>
-              <p>Total ingresos</p>
-            </td>
-            <td>${totalIncome.toFixed(2)}</td>
-          </tr>
-        </tbody>
-      </table>
-      <button className={styles.upsertButton} onClick={handleUpsertClick}>
-        Siguiente
+                </td>
+                <td className="whitespace-nowrap px-4 py-2 font-medium text-primary">
+                  <input
+                    type="text"
+                    name="amount"
+                    value={input.amount}
+                    onChange={handleInputChange}
+                    placeholder="Monto"
+                    className="w-full rounded border-gray-200 [-moz-appearance:_textfield] sm:text-sm [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                </td>
+                <td className="whitespace-nowrap px-4 py-2 font-medium text-primary hidden md:table-cell">
+                  <button
+                    onClick={handleAddIncome}
+                    className="w-full bg-brand hover:bg-primary text-white font-bold py-2 px-4 rounded"
+                  >
+                    Agregar
+                  </button>
+                </td>
+              </tr>
+              <tr className="md:hidden items-center">
+                <td
+                  className="mx-auto whitespace-nowrap px-4 py-2 font-medium text-primary"
+                  colSpan={4}
+                >
+                  <button
+                    onClick={handleAddIncome}
+                    className="w-full bg-brand items-center justify-center align-center text-white font-bold py-2 px-4 rounded inline-block"
+                  >
+                    Agregar
+                  </button>
+                </td>
+              </tr>
+
+              <tr>
+                <td className="whitespace-nowrap font-bold px-4 py-2 text-primary">
+                  <p>Total ingresos</p>
+                </td>
+                <td className="whitespace-nowrap font-bold px-4 py-2 text-primary">
+                  ${totalIncome.toFixed(2)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <button
+          className="w-full rounded-md border border-primary bg-primary px-12 py-3 text-sm font-medium text-white mt-4 hidden sm:block"
+          onClick={handleContinue}
+        >
+          Continuar
+        </button>
+      </div>
+      <button
+        className="w-full h-16 border border-primary bg-primary px-12 py-3 text-sm font-medium text-white md:hidden"
+        onClick={handleContinue}
+      >
+        Continuar
       </button>
     </div>
   );
-}
+};
+
+export default Incomes;

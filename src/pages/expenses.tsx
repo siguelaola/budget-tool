@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from "react";
-import styles from "./expenses.module.css";
-import { supabaseClient } from "../../utils";
+import React, { useState, useEffect, useContext } from "react";
 import { Doughnut } from "react-chartjs-2";
 import { useRouter } from "next/router";
 import "chart.js/auto";
+import { NextPage } from "next";
+import { CustomProps } from "./interfaces";
+import { supabase } from "../../utils";
+import { useUserData } from "./UserDataProvider";
 
 type Expense = {
-  id: string;
+  id?: string;
   name: string;
   amount: number;
   category: string;
@@ -23,97 +25,82 @@ type Category = {
   name: string;
 };
 
-const Expenses = () => {
+const Expenses: NextPage<CustomProps> = ({ session }) => {
   const router = useRouter();
+  const { userData, setUserData } = useUserData();
 
   const [expenses, setExpenses] = useState<Expense[]>([
     {
-        id: "123",
       name: "Renta / Mortgage",
       amount: 0,
       category: "Renta/Mortgage",
     },
     {
-        id: "124",
       name: "Automercado",
       amount: 0,
       category: "Comidas",
     },
     {
-        id: "125",
       name: "Deudas estudiantiles",
       amount: 0,
       category: "Pago de Deudas",
     },
     {
-        id: "126",
       name: "Lease del Carro",
       amount: 0,
       category: "Pago de Deudas",
     },
     {
-        id: "127",
       name: "Cine, Fiestas, etc.",
       amount: 0,
       category: "Entretenimiento",
     },
     {
-        id: "128",
       name: "Pagos de tarjeta de credito",
       amount: 0,
       category: "Pago de Deudas",
     },
     {
-        id: "129",
       name: "Restaurantes",
       amount: 0,
       category: "Entretenimiento",
     },
     {
-      id: "130",
       name: "Seguro Medico",
       amount: 0,
       category: "Salud y Deporte",
     },
     {
-      id: "131",
       name: "Telefono",
       amount: 0,
       category: "Utilidades",
     },
     {
-      id: "100",
       name: "Electricidad",
       amount: 0,
       category: "Utilidades",
     },
     {
-      id: "110",
       name: "Gimnasio",
       amount: 0,
       category: "Salud y Deportes",
     },
     {
-      id: "120",
       name: "401K or IRA",
       amount: 0,
       category: "Otros",
     },
     {
-      id: "130",
       name: "Subscripciones (Netflix, Amazon...)",
       amount: 0,
       category: "Entretenimiento",
     },
     {
-      id: "140",
       name: "Internet",
       amount: 0,
       category: "Utilidades",
     },
-
     {
-      id: "150",
       name: "Impuestos",
       amount: 0,
       category: "Impuestos",
@@ -132,6 +119,18 @@ const Expenses = () => {
     );
     return { category, amount: totalAmountForCategory };
   });
+
+  const defaultData = {
+    datasets: [
+      {
+        data: [1],
+        backgroundColor: ["#695bff"],
+        borderColor: ["#695bff"],
+        borderWidth: 1,
+      },
+    ],
+    labels: ["No Data Available"],
+  };
 
   const chartData = {
     labels: categoryExpenses.map(({ category }) => category.name),
@@ -168,7 +167,7 @@ const Expenses = () => {
 
   const fetchCategories = async () => {
     try {
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabase
         .from("categories")
         .select("id, name");
 
@@ -184,15 +183,14 @@ const Expenses = () => {
 
   const fetchExpenses = async () => {
     try {
-      const { data, error } = await supabaseClient.from("expenses").select("*");
+      const { data, error } = await supabase.from("expenses").select("*");
 
-      //   if (data === null) {
-      //     return;
-      //   }
+      if (data === null) {
+        return;
+      }
 
       if (error) console.log("Error fetching incomes:", error);
       else if (data.length > 0) setExpenses(data as Expense[]);
-
     } catch (error) {
       console.error(error);
     }
@@ -214,10 +212,12 @@ const Expenses = () => {
   });
 
   const options = {
+    responsive: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: {
         display: true,
-        position: "right",
+        position: "bottom",
         labels: {
           filter(item: any, data: any) {
             return data.datasets[0].data[item.index] > 0;
@@ -237,53 +237,58 @@ const Expenses = () => {
     }));
   };
 
-  const handleAddExpense = () => {
+  const handleAddExpense = async () => {
     const { name, amount, category } = expenseInput;
     if (name && amount && category) {
+      const { data, error } = await supabase
+        .from("expenses")
+        .insert({ ...expenseInput, user_id: session?.user.id })
+        .select();
+
+      if (data === null) {
+        return;
+      }
+
       setExpenses((prevState) => [
         ...prevState,
         {
-          id: Date.now().toString(),
           name,
           amount: parseFloat(amount),
           category,
+          id: data[0].id,
         },
       ]);
       setExpenseInput({ name: "", amount: "", category: "" });
     }
   };
 
-  const goNext = async () => {
-    const response = supabaseClient.auth.getUser();
-    let id = (await response).data.user?.id;
-
-    if (id === undefined) {
-      router.push("dashboard");
-    }
-
+  const handleContinue = async () => {
     const expensesData = expenses.map((expense) => ({
-        name: expense.name, 
-        amount: expense.amount, 
-        category: expense.category,
-        user_id: id,
-      }));
+      name: expense.name,
+      amount: expense.amount,
+      category: expense.category,
+      user_id: session?.user.id,
+    }));
 
-    const { data, error } = await supabaseClient
+    const { data, error } = await supabase
       .from("expenses")
       .upsert(expensesData, { onConflict: "user_id, name" });
 
-    router.push({
-      pathname: "emergencyFund",
-      query: { expenses: expensesTotal, income: router.query.income},
-    }, "emergencyFund");
+    setUserData({ ...userData, expenses: expensesTotal });
+
+    router.push("emergencyFund");
   };
 
   const handleExpenseUpdate = (data: Expense) => {
+    // console.log(data)
     setExpenses((prevExpenses) => {
       const updatedExpenses = prevExpenses.map((expense) => {
-        if (expense.id === data.id) {
+        // console.log(expense.id, " ", data.id)
+        if (expense.name === data.name) {
+            // console.log(expense)
           return { ...expense, amount: data.amount };
         } else {
+            console.log("not update")
           return expense;
         }
       });
@@ -297,116 +302,170 @@ const Expenses = () => {
   );
 
   return (
-    <div className={styles.expensesContainer}>
-      <div className={styles.expensesView}>
-        <div className={styles.container}>
-          <h2 className={styles.header}>Introduce tus egresos mensuales</h2>
-          <div className={styles.tableContainer}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Egresos mensuales</th>
-                  <th>Monto</th>
-                  <th>Categoría</th>
-                  <th>Porcentaje de gasto</th>
-                </tr>
-              </thead>
-              <tbody>
-                {expenses.map((expense) => (
-                  <tr key={expense.id}>
-                    <td>{expense.name}</td>
-                    <td>
-                      <input
-                        type="text"
-                        name="amount"
-                        value={expense.amount}
-                        onChange={(
-                          e: React.ChangeEvent<
-                            HTMLInputElement | HTMLSelectElement
-                          >
-                        ) => {
-                          // if (e.target.value.substring)
-                          const newValue = parseFloat(e.target.value);
-                          expense.amount = !Number.isNaN(newValue)
-                            ? newValue
-                            : 0;
-                          handleExpenseUpdate(expense);
-                        }}
-                        placeholder="Monto"
-                      />
-                    </td>
-                    <td>{expense.category}</td>
-                    <td>
-                      {expensesTotal == 0
-                        ? "0%"
-                        : ((expense.amount / expensesTotal) * 100).toFixed(2) +
-                          "%"}
-                    </td>
-                  </tr>
-                ))}
-                <tr>
-                  <td>
-                    <input
-                      type="text"
-                      name="name"
-                      value={expenseInput.name}
-                      onChange={handleInputChange}
-                      placeholder="Egreso"
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="text"
-                      name="amount"
-                      value={expenseInput.amount}
-                      onChange={handleInputChange}
-                      placeholder="Monto"
-                    />
-                  </td>
-                  <td>
-                    <select
-                      name="category"
-                      value={expenseInput.category}
-                      onChange={handleInputChange}
-                    >
-                      <option value="">Select a category</option>
-                      {categories.map((category) => {
-                        return (
-                          <option key={category.name} value={category.name}>
-                            {category.name}
-                          </option>
-                        );
-                      })}
-                    </select>
-                  </td>
-                  <td>
-                    <button onClick={handleAddExpense}>Agregar</button>
-                  </td>
-                </tr>
-                <tr>
-                  <td className={styles.total}>Egresos totales:</td>
-                  <td className={styles.total}>
-                    {getTotalExpensesAmount(expenses)}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background text-primary">
+      <div className="sm:hidden bg-primary w-full">
+        <h2 className="text-center font-bold text-4xl m-8 text-white">
+          Define tus egresos mensuales
+        </h2>
+      </div>
+      <div className="max-w-screen-lg w-full mx-4 bg-white rounded-lg shadow-lg p-8 overflow-y-scroll">
+        <h2 className="text-left text-3xl font-bold sm:text-4xl hidden sm:block">
+          Define tus egresos mensuales
+        </h2>
+        <div className="flex flex-col justify-center items-center space-y-4 text-primary">
+          <div className="text-leading">
+            <p className="mt-4">
+              Lorem ipsum dolor, sit amet consectetur adipisicing elit. Aut qui
+              hic atque tenetur quis eius quos ea neque sunt, accusantium soluta
+              minus veniam tempora deserunt? Molestiae eius quidem quam
+              repellat.
+            </p>
           </div>
-          <button onClick={goNext}>Continue</button>
-        </div>
-        <div className={styles.chartContainer}>
-          <div className={styles.chartTitle}>Distribución de Gastos</div>
-          {expensesTotal > 0 ? (
-            <div className="expenses-chart">
-              <Doughnut data={chartData} options={options} />
+          <div className="flex flex-col xl:flex-row justify-center items-center p-1 md:p-8">
+            <div className="md:w-3/4 mx-auto">
+              <div className="mx-auto">
+                <div className="table-container overflow-x-scroll text-sm">
+                  <table className="w-screen md:w-full table-fixed text-left mt-4">
+                    <thead className="bg-brand text-white">
+                      <tr>
+                        <th className="border px-4 py-2 font-bold">
+                          Egresos mensuales
+                        </th>
+                        <th className="border px-4 py-2 font-bold">Monto</th>
+                        <th className="border px-4 py-2 font-bold">
+                          Categoría
+                        </th>
+                        <th className="border px-4 py-2 font-bold">
+                          Porcentaje de gasto
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="text-xs md:text-base">
+                      {expenses.map((expense, index) => (
+                        <tr key={index}>
+                          <td className="border px-1 md:px-4 py-2">{expense.name}</td>
+                          <td className="border px-1 md:px-4 py-2">
+                            <input
+                              type="text"
+                              name="amount"
+                              value={expense.amount}
+                              onChange={(e) => {
+                                const newValue = parseFloat(e.target.value);
+                                console.log("new value: ", newValue)
+                                expense.amount = !Number.isNaN(newValue)
+                                  ? newValue
+                                  : 0;
+                                handleExpenseUpdate(expense);
+                              }}
+                              placeholder="Monto"
+                              className="w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent rounded-md border-gray-300 px-2 py-1"
+                            />
+                          </td>
+                          <td className="border px-1 md:px-4 py-2">
+                            {expense.category}
+                          </td>
+                          <td className="border px-1 md:px-4 py-2">
+                            {expensesTotal === 0
+                              ? "0%"
+                              : (
+                                  (expense.amount / expensesTotal) *
+                                  100
+                                ).toFixed(2) + "%"}
+                          </td>
+                        </tr>
+                      ))}
+                      <tr>
+                      <td className="border px-1 md:px-4 py-2 text-center">
+                          <input
+                            type="text"
+                            name="name"
+                            value={expenseInput.name}
+                            onChange={handleInputChange}
+                            placeholder="Egreso"
+                            className="w-full focus:outline-none text-xs md:text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent rounded-md border-gray-300 px-2 py-1"
+                          />
+                        </td>
+                        <td className="border px-1 md:px-4 py-2 text-center">
+                          <input
+                            type="text"
+                            name="amount"
+                            value={expenseInput.amount}
+                            onChange={handleInputChange}
+                            placeholder="Monto"
+                            className="w-20 focus:outline-none focus:ring-2 text-xs md:text-base focus:ring-blue-500 focus:border-transparent rounded-md border-gray-300 px-2 py-1"
+                          />
+                        </td>
+                        <td className="border px-1 md:px-4 py-2">
+                          <select
+                            name="category"
+                            value={expenseInput.category}
+                            onChange={handleInputChange}
+                            className="w-full text-xs pr-10 focus:outline-none text-xs md:text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent rounded-md border-gray-300 px-2 py-1"
+                          >
+                            <option value="">Select</option>
+                            {categories.map((category) => (
+                              <option key={category.name} value={category.name}>
+                                {category.name}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="border md:px-4 py-2 text-center">
+                          <button
+                            onClick={handleAddExpense}
+                            className="bg-brand text-white font-bold py-2 px-4 rounded"
+                          >
+                            Agregar
+                          </button>
+                        </td>
+                      </tr>
+                      <tr className="bg-brand text-white">
+                        <td
+                          className="text-center border px-4 py-2 font-bold text-base"
+                          colSpan={2}
+                        >
+                          Egresos totales
+                        </td>
+                        <td
+                          className="text-center border px-4 py-2 font-bold text-base"
+                          colSpan={2}
+                        >
+                          {getTotalExpensesAmount(expenses)}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
-          ) : (
-            <div className="expenses-message">
-              <p>Fill the expenses</p>
+            <div className="w-full xl:w-2/5 p-4 mx-auto sticky top-0">
+              <div className="bg-white rounded-md mt-16 shadow-[0_0_15px_15px_rgba(0,0,0,0.1)] lg:shadow-xl p-16 h-full">
+                <div className="text-center text-xl font-bold mb-4">
+                  Distribución de Gastos
+                </div>
+                <div>
+                  <Doughnut
+                    data={expensesTotal > 0 ? chartData : defaultData}
+                    options={options}
+                  />
+                </div>
+              </div>
             </div>
-          )}
+          </div>
+          <button
+            className="w-full rounded-md border border-primary bg-primary px-12 py-3 text-sm font-medium text-white mt-4 hidden sm:block"
+            onClick={handleContinue}
+          >
+            Continuar
+          </button>
         </div>
       </div>
+        <button
+          className="w-full h-16 border border-primary bg-primary px-12 py-3 text-sm font-medium text-white md:hidden"
+          onClick={handleContinue}
+        >
+          Continuar
+        </button>
     </div>
   );
 };

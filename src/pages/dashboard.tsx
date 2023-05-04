@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { supabaseClient } from "../../utils";
+import { supabase } from "../../utils";
 import styles from "./dashboard.module.css";
 import { useRouter } from "next/router";
-import exp from "constants";
 
 // const Dashboard = () => {
 // //   const [salary, setSalary] = useState("");
@@ -41,7 +40,7 @@ import exp from "constants";
 //   const handleSave = async () => {
 //     // Save income fields to Supabase
 //     const incomeData = incomeFields.map((field) => ({ name: field.name, amount: parseInt(field.amount) }));
-//     const { error: incomeError } = await supabaseClient.from("incomes").insert(incomeData);
+//     const { error: incomeError } = await supabase.from("incomes").insert(incomeData);
 //     if (incomeError) {
 //       console.error("Error saving income fields:", incomeError);
 //       return;
@@ -49,7 +48,7 @@ import exp from "constants";
 
 //     // Save expense fields to Supabase
 //     const expenseData = expenseFields.map((field) => ({ name: field.name, amount: parseInt(field.amount) }));
-//     const { error: expenseError } = await supabaseClient.from("expenses").insert(expenseData);
+//     const { error: expenseError } = await supabase.from("expenses").insert(expenseData);
 //     if (expenseError) {
 //       console.error("Error saving expense fields:", expenseError);
 //       return;
@@ -61,12 +60,12 @@ import exp from "constants";
 // //   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 // //     e.preventDefault();
 // //     try {
-// //     //   const { user } = await supabaseClient.auth.signUp({
+// //     //   const { user } = await supabase.auth.signUp({
 // //     //     email: "example@email.com",
 // //     //     password: "password",
 // //     //   });
 // //     //   if (user) {
-// //         // const { data: incomeData, error: incomeError } = await supabaseClient
+// //         // const { data: incomeData, error: incomeError } = await 
 // //         //   .from("income")
 // //         //   .insert({ salary });
 // //         // if (incomeError) {
@@ -77,7 +76,7 @@ import exp from "constants";
 // //           name,
 // //           amount: Number(amount),
 // //         }));
-// //         const { error: expensesError } = await supabaseClient
+// //         const { error: expensesError } = await 
 // //           .from("expenses")
 // //           .insert(expensesData);
 // //         if (expensesError) {
@@ -155,7 +154,7 @@ const Dashboard = () => {
     const router = useRouter();
 
     const check_if_logged = async () => {
-        const response = await supabaseClient.auth.getUser();
+        const response = await supabase.auth.getUser();
         // console.log("user: ", response);
 
         if (response.error !== null) {
@@ -163,7 +162,7 @@ const Dashboard = () => {
             // router.replace("/signup")
             // throw "Error"
 
-            const { data, error } = await supabaseClient.auth.signInWithPassword({
+            const { data, error } = await supabase.auth.signInWithPassword({
                 email: "alex@valid.com",
                 password: "123123",
               });
@@ -177,7 +176,7 @@ const Dashboard = () => {
             await check_if_logged()
     
             // Fetch categories
-            const { data, error } = await supabaseClient
+            const { data, error } = await 
               .from('categories')
               .select('id, name')
 
@@ -238,23 +237,23 @@ const Dashboard = () => {
 
   const handleSubmit = async () => {
     try {
-      const user = supabaseClient.auth.getUser();
+      const user = .auth.getUser();
       if (!user) throw new Error("User not logged in");
 
-      //   const { data: incomesData, error: incomesError } = await supabaseClient
+      //   const { data: incomesData, error: incomesError } = await 
       //     .from("incomes")
       //     .insert([{ user_id: (await user).data.user?.id, amount: income }]);
 
       //   if (incomesError) throw incomesError;
 
-      const { data, error } = await supabaseClient.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: "alex@test.com",
         password: "123123",
       });
 
       console.log(data);
 
-      const session = supabaseClient.auth.getSession();
+      const session = .auth.getSession();
       const id = (await session).data.session?.user.id;
 
       console.log(user);
@@ -264,7 +263,7 @@ const Dashboard = () => {
         return;
       }
 
-      const { data: expensesData, error: expensesError } = await supabaseClient
+      const { data: expensesData, error: expensesError } = await 
         .from("expenses")
         .insert(
           expenses.map((expense) => ({
@@ -285,14 +284,14 @@ const Dashboard = () => {
 
   const handleSaveData = async () => {
     try {
-      const response = supabaseClient.auth.getUser();
+      const response = .auth.getUser();
 
       let id = (await response).data.user?.id;
       console.log("id: ", id)
 
       if (id === undefined) {
         console.log("sign in")
-        const { data, error } = await supabaseClient.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email: "alex@valid.com",
           password: "123123",
         });
@@ -318,18 +317,18 @@ const Dashboard = () => {
 
     console.log(incomeData)
 
-// const { data: updatedData, error } = await supabaseClient
+// const { data: updatedData, error } = await 
 // .from('income')
 // .upsert(data, { onConflict: 'user_id'});
       
-      const { data, error } = await supabaseClient
+      const { data, error } = await 
         .from('income')
         .upsert(incomeData, { onConflict: 'name'});
 
     //   for (const item of incomeData) {
     //     if (item.name === "") { continue }
 
-    //     const { data, error } = await supabaseClient
+    //     const { data, error } = await 
     //       .from("income")
     //       .upsert(
     //         {
@@ -348,7 +347,7 @@ const Dashboard = () => {
         // }
     //   }
 
-      //   const { error: incomeError } = await supabaseClient
+      //   const { error: incomeError } = await 
       //   .from("income")
       //   .upsert(
       //     {
@@ -359,10 +358,10 @@ const Dashboard = () => {
       //     { onConflict: "name" }
       //   );
 
-      // const { error: incomeError } = await supabaseClient
+      // const { error: incomeError } = await 
       //   .from("income")
       //   .upsert(incomeData);
-      // const { error: expenseError } = await supabaseClient
+      // const { error: expenseError } = await 
       //   .from("expenses")
       //   .insert(expenseData);
       if (incomeError || expenseError) throw new Error("Error saving data");
