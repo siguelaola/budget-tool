@@ -1,6 +1,7 @@
 {
   "name": "budget-tool",
   "version": "0.1.0",
+  "homepage": "https://siguelaola.github.io/budget-tool",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -8,7 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "export": "next export",
-    "deploy": "npm run build && npm run export && gh-pages -d out"
+    "deploy": "next build && next export && gh-pages -d out"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.0.1",
