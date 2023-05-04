@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { useUserData } from "./UserDataProvider";
+import { useUserData } from "../components/UserDataProvider";
 
 const EmergencyFund = () => {
   const [currentSavings, setCurrentSavings] = useState<number>(0);

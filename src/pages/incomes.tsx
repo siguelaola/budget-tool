@@ -1,9 +1,9 @@
 import { useState, useEffect, useContext } from "react";
 import { useRouter } from "next/router";
 import { NextPage } from "next";
-import { CustomProps } from "./interfaces";
+import { CustomProps } from "../interfaces/interfaces";
 import { supabase } from "../../utils";
-import { useUserData } from "./UserDataProvider";
+import { useUserData } from "../components/UserDataProvider";
 
 type Income = {
   id?: string;

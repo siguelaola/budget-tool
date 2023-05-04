@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import styles from "./goals.module.css";
 import { v4 as uuid } from "uuid";
 import { supabase } from "../../utils";
-import { CustomProps } from "./interfaces";
+import { CustomProps } from "../interfaces/interfaces";
 
 interface Goal {
   id: string;
@@ -172,7 +172,7 @@ const Goals = ({ session }: CustomProps) => {
               ))}
             </tbody>
           </table>
-          <div className={styles.addButtonContainer}>
+          <div>
             <button
               className="w-full inline-block rounded bg-brand px-4 py-2 text-base font-medium text-white"
               onClick={handleAddGoal}

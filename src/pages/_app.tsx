@@ -7,7 +7,7 @@ import Home from ".";
 import Account from "./Account";
 import { supabase } from "../../utils";
 
-import { UserDataProvider } from "./UserDataProvider";
+import { UserDataProvider } from "../components/UserDataProvider";
 
 export default function App({ Component, pageProps }: AppProps) {
   const [session, setSession] = useState<any>(null);

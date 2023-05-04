@@ -1,8 +1,8 @@
 import { useRouter } from "next/router";
 import { useEffect } from "react";
 import { NextPage } from "next";
-import { CustomProps } from "./interfaces";
-import { useUserData } from "./UserDataProvider";
+import { CustomProps } from "../interfaces/interfaces";
+import { useUserData } from "../components/UserDataProvider";
 
 const Summary: NextPage<CustomProps> = ({ session }) => {
   const router = useRouter();
