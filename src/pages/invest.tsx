@@ -1,36 +1,31 @@
 import { useRouter } from "next/router";
-import { useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "../../utils";
-import { AppContext } from "./AppProvider";
 import { NextPage } from "next";
 import { CustomProps } from "./interfaces";
-// import { useFinancialData } from "./FinancialDataProvider";
-
 import { useUserData } from "./UserDataProvider";
 
 const Invest: NextPage<CustomProps> = ({ session }) => {
   const router = useRouter();
-//   const { appState, updateInvestments } = useContext(AppContext);
-
-//   const { financialData, setFinancialData } = useFinancialData();
-
-//   const handleUpdateFinancialData = (newData) => {
-//     setFinancialData({ ...financialData, ...newData });
-//   };
-
-    const { userData, setUserData } = useUserData();
-
-//   const handleAddIncome = (amount: number) => {
-//     const newIncome = userData.totalIncome + amount;
-//     setUserData({ ...userData, totalIncome: newIncome });
-//   };
-
-
+  const { userData, setUserData } = useUserData();
 
   const disponible = userData.totalIncome - userData.expenses;
   const [mensual, setMensual] = useState<number>(0);
 
   useEffect(() => {
+    async function fetchData() {
+      const { data, error } = await supabase
+        .from("investments")
+        .select("monthly");
+  
+      if (error) console.error("Error fetch investments: ", error);
+      else if (data.length > 0 && data[0]["monthly"] !== undefined)
+        Number(setMensual(data[0]["monthly"]));
+      else {
+        setMensual(disponible);
+      }
+    }
+    
     fetchData();
   }, []);
 
@@ -38,18 +33,6 @@ const Invest: NextPage<CustomProps> = ({ session }) => {
     setMensual(value);
   };
 
-  async function fetchData() {
-    const { data, error } = await supabase
-      .from("investments")
-      .select("monthly");
-
-    if (error) console.error("Error fetch investments: ", error);
-    else if (data.length > 0 && data[0]["monthly"] !== undefined)
-      Number(setMensual(data[0]["monthly"]));
-    else {
-      setMensual(disponible);
-    }
-  }
 
   const handleContinue = async () => {
     const { data, error } = await supabase.from("investments").upsert({
@@ -60,8 +43,8 @@ const Invest: NextPage<CustomProps> = ({ session }) => {
     if (error) {
       console.error(error);
     } else {
-        setUserData({ ...userData, investments: mensual })
-    //   updateInvestments(mensual);
+      setUserData({ ...userData, investments: mensual });
+      //   updateInvestments(mensual);
       router.push("summary");
     }
   };

@@ -14,12 +14,10 @@ export default function App({ Component, pageProps }: AppProps) {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log("get session");
       setSession(session);
     });
 
     supabase.auth.onAuthStateChange((_event, session) => {
-      console.log("auth change");
       setSession(session);
     });
   }, []);
@@ -28,7 +26,7 @@ export default function App({ Component, pageProps }: AppProps) {
     <UserDataProvider {...pageProps}>
       {!session ? (
         <Account {...pageProps} />
-      ) : // <Signup {...pageProps} />
+      ) : 
       Component !== Home && Component !== Account ? (
         <Component session={session} {...pageProps} />
       ) : (

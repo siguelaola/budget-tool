@@ -1,4 +1,4 @@
-import { Session, User } from "@supabase/supabase-js";
+import { Session } from "@supabase/supabase-js";
 import { createContext, useContext, useEffect, useState } from "react";
 
 interface UserData {
@@ -13,16 +13,18 @@ interface UserDataProviderProps {
   session: Session;
 }
 
+const defaultUserData: UserData = {
+  totalIncome: 0,
+  expenses: 0,
+  savings: 0,
+  investments: 0,
+};
+
 const UserDataContext = createContext<{
   userData: UserData;
   setUserData: React.Dispatch<React.SetStateAction<UserData>>;
 }>({
-  userData: {
-    totalIncome: 0,
-    expenses: 0,
-    savings: 0,
-    investments: 0,
-  },
+  userData: defaultUserData,
   setUserData: () => {},
 });
 
@@ -31,7 +33,7 @@ export const UserDataProvider = ({
   session,
 }: UserDataProviderProps) => {
   
-  const [userData, setUserData] = useState<UserData>();
+  const [userData, setUserData] = useState<UserData>(defaultUserData);
 
   useEffect(() => {
     const storedData = localStorage.getItem("userData");
@@ -57,27 +59,6 @@ export const UserDataProvider = ({
         localStorage.setItem("userData", JSON.stringify(userData));
     }
   }, [userData]);
-
-  //   useEffect(() => {
-  //     const savedUser = localStorage.getItem('user')
-  //     if (savedUser) {
-  //       setUser(JSON.parse(savedUser))
-  //     }
-  //   }, [])
-
-  //   useEffect(() => {
-  //     // const fetchUser = async () => {
-  //     //   const response = await fetch('/api/user')
-  //     //   const data = await response.json()
-  //     //   setUser(data)
-  //     //   localStorage.setItem('user', JSON.stringify(data))
-  //     // }
-
-  //     if (session?.user) {
-  //     //   fetchUser()
-  //         localStorage.setItem('user', JSON.stringify(userData))
-  //     }
-  //   }, [session])
 
   return (
     <UserDataContext.Provider value={{ userData, setUserData }}>

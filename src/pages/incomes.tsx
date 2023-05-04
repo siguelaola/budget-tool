@@ -53,7 +53,7 @@ const Incomes: NextPage<CustomProps> = ({ session }) => {
     fetchIncomes();
   }, []);
 
-  type PropertyName = "name" | "amount";
+  type PropertyName = "name" | "amount" | keyof Income;
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -89,9 +89,16 @@ const Incomes: NextPage<CustomProps> = ({ session }) => {
     }
   };
 
-  const handleChange = (index: number, property: PropertyName, value: any) => {
+  const handleChange = (
+    index: number,
+    property: PropertyName,
+    value: string | number
+  ) => {
     const newIncomes = [...incomes];
-    newIncomes[index][property] = value;
+    newIncomes[index] = {
+      ...newIncomes[index],
+      [property]: value,
+    };
     setIncomes(newIncomes);
   };
 

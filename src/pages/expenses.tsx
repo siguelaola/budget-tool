@@ -217,7 +217,7 @@ const Expenses: NextPage<CustomProps> = ({ session }) => {
     plugins: {
       legend: {
         display: true,
-        position: "bottom",
+        position: 'bottom' as const,
         labels: {
           filter(item: any, data: any) {
             return data.datasets[0].data[item.index] > 0;
